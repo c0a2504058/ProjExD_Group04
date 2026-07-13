@@ -2,6 +2,7 @@ import pygame as pg
 import random
 import os
 import sys #Python事態を操作するためのライブラリ
+import time
 
 WIDTH = 800 #以下2行色
 HEIGHT = 600
@@ -104,7 +105,6 @@ class Message:
         screen.blit(img,(50,520))
 
 
-
 def new_game():
     deck = Deck()
     player = Hand()
@@ -124,6 +124,19 @@ def new_game():
         game_over = True
     return deck, player, dealer, message, game_over
 
+class Burakkujakku_gamen:
+
+    def burakkujakku_gamen(self, screen: pg.Surface) -> None:
+        go_img = pg.Surface((WIDTH, HEIGHT))
+        pg.draw.rect(go_img, (0, 0, 0), pg.Rect(0, 0, WIDTH, HEIGHT))
+        go_img.set_alpha(180)
+        
+        fonto = pg.font.Font(None, 50)
+        txt = fonto.render("Black Jack", True, (255, 255, 255))
+        go_img.blit(txt, [WIDTH // 2 -150, HEIGHT // 2 - 40])
+
+        screen.blit(go_img, [0, 0])
+
 
 def main():
     screen = pg.display.set_mode((WIDTH,HEIGHT))
@@ -138,6 +151,9 @@ def main():
         result_timer = 0
 
     while True:
+        
+        if game_over and result_timer == 0:
+            result_timer = pg.time.get_ticks()
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return
@@ -171,10 +187,17 @@ def main():
         dealer.draw_dealer(screen, font, 50, 80, not game_over)
         player.draw(screen, font, 50, 320)
         message.update(screen)
+
+        if player.total() == 21 and len(player.cards) == 2:
+            bg = Burakkujakku_gamen()
+            bg.burakkujakku_gamen(screen)
+
         pg.display.update()
+
         if game_over:# 2秒後に新しいゲーム開始
             if pg.time.get_ticks() - result_timer > 2000:
                 deck, player, dealer, message, game_over = new_game()
+                result_timer = 0
 
         clock.tick(60)
 
