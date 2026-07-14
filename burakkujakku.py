@@ -2,6 +2,7 @@ import pygame as pg
 import random
 import os
 import sys #Python事態を操作するためのライブラリ
+import time
 
 WIDTH = 800 #以下2行色
 HEIGHT = 600
@@ -129,53 +130,75 @@ def main():
     screen = pg.display.set_mode((WIDTH,HEIGHT))
     pg.display.set_caption("Pygame ブラックジャック")
     font = pg.font.SysFont("msgothic", 25)
+    main_menu_font = pg.font.SysFont("msgothic", 60)    #メインメニュー画面のフォント
+    scene = "TITLE"
     clock = pg.time.Clock()
-    deck, player, dealer, message, game_over = new_game()
-
-    if game_over:
-        result_timer = pg.time.get_ticks()
-    else:
-        result_timer = 0
+    deck, player, dealer, message, game_over = None, None, None, None, False
+    result_timer = 0
 
     while True:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return
 
-            if event.type == pg.KEYDOWN and not game_over:
-                if event.key == pg.K_h:# HIT
-                    player.add(deck.draw())
-                    if player.total() > 21:
-                        message.text = "Bust! You Lose!"
+            if scene == "TITLE":
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_e:  #ゲームスタート
+                        deck, player, dealer, message, game_over = new_game()
+                        if game_over:
+                            result_timer = pg.time.get_ticks()
+                        else:
+                            result_timer = 0
+                        scene = "GAME"  #ゲーム画面へ遷移
+
+            elif scene == "GAME" and not game_over:
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_h: #HIT
+                        player.add(deck.draw())
+                        if player.total() > 21:
+                            message.text = "Bust! You Lose!"
+                            game_over = True
+                            result_timer = pg.time.get_ticks()
+
+                    elif event.key == pg.K_s:   #STAND
+                        while dealer.total() < 17:
+                            dealer.add(deck.draw())
+                        p = player.total()
+                        d = dealer.total()
+
+                        if d > 21:
+                            message.text = "Dealer Bust! You Win!"
+                        elif p > d:
+                            message.text = "You Win!"
+                        elif p < d:
+                            message.text = "You Lose!"
+                        else:
+                            message.text = "Draw!"
+
                         game_over = True
                         result_timer = pg.time.get_ticks()
-                elif event.key == pg.K_s:# STAND
-                    while dealer.total() < 17:
-                        dealer.add(deck.draw())
-                    p = player.total()
-                    d = dealer.total()
 
-                    if d > 21:
-                        message.text = "Dealer Bust! You Win!"
-                    elif p > d:
-                        message.text = "You Win!"
-                    elif p < d:
-                        message.text = "You Lose!"
-                    else:
-                        message.text = "Draw!"
+        if scene == "TITLE":    #タイトル画面
+            screen.fill(WHITE)
+            title_text = main_menu_font.render("Blackjack", True, BLACK)
+            title_rect = title_text.get_rect(center=(WIDTH // 2, HEIGHT // 3))
+            screen.blit(title_text, title_rect)
+                
+            start_text = font.render("E ボタンでスタート", True, BLACK)
+            start_rect = start_text.get_rect(center=(WIDTH // 2, HEIGHT // 3 * 2))
+            screen.blit(start_text, start_rect)
+                    
+        elif scene == "GAME":   #ゲーム画面
+            screen.fill(GREEN)
+            dealer.draw_dealer(screen, font, 50, 80, not game_over)
+            player.draw(screen, font, 50, 320)
+            message.update(screen)
 
-                    game_over = True
-                    result_timer = pg.time.get_ticks()
+            if game_over:   #2秒後に新しいゲーム開始
+                if pg.time.get_ticks() - result_timer > 2000:
+                    deck, player, dealer, message, game_over = new_game()
 
-        screen.fill(GREEN)
-        dealer.draw_dealer(screen, font, 50, 80, not game_over)
-        player.draw(screen, font, 50, 320)
-        message.update(screen)
         pg.display.update()
-        if game_over:# 2秒後に新しいゲーム開始
-            if pg.time.get_ticks() - result_timer > 2000:
-                deck, player, dealer, message, game_over = new_game()
-
         clock.tick(60)
 
 if __name__ == "__main__":
